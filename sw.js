@@ -1,5 +1,5 @@
 /* Service worker - offline podpora pre kalkulačku */
-const CACHE = 'kalkulacka-v4';
+const CACHE = 'kalkulacka-v5';
 const ASSETS = [
   './',
   './index.html',
