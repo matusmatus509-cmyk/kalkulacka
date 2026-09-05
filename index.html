@@ -1,0 +1,997 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#000000">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Kalkulačka">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>Kalkulačka</title>
+<style>
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{height:100%;}
+  body{
+    margin:0; background:#000;
+    display:flex; align-items:center; justify-content:center;
+    font-family:"SamsungOne","Samsung Sharp Sans","Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  }
+  .app{
+    width:390px; max-width:100vw; height:780px; max-height:100vh;
+    background:#000; display:flex; flex-direction:column; overflow:hidden;
+  }
+
+  /* horná lišta s ikonami */
+  .topbar{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:32px 28px 0;
+  }
+  .topbar .icons{display:flex; align-items:center; gap:22px;}
+  .topbar svg{display:block; cursor:pointer; opacity:.95;}
+  .topbar svg:active{opacity:.5;}
+
+  /* displej */
+  .display{
+    flex:1; display:flex; flex-direction:column;
+    justify-content:flex-end; align-items:flex-end;
+    padding:0 22px 58px; cursor:pointer; user-select:none;
+    min-height:170px; overflow:hidden;
+  }
+  .expr{
+    color:#cdccd0; font-size:42px; font-weight:400;
+    max-width:100%; overflow-x:auto; white-space:nowrap;
+    scrollbar-width:none; line-height:1.25;
+  }
+  .expr::-webkit-scrollbar{display:none;}
+  .preview{
+    color:#57565a; font-size:25px; font-weight:400;
+    max-width:100%; overflow-x:auto; white-space:nowrap;
+    scrollbar-width:none; margin-top:62px; min-height:31px;
+  }
+  .preview::-webkit-scrollbar{display:none;}
+  .caret{
+    display:inline-block; width:2.5px; height:1.2em;
+    background:#cccad3; vertical-align:-.18em; margin-left:5px;
+    animation:blink 1.1s steps(1) infinite;
+  }
+  @keyframes blink{50%{opacity:0;}}
+
+  /* klávesnica */
+  .pad{
+    display:grid; grid-template-columns:repeat(4,67px);
+    justify-content:space-between;
+    gap:15px 0; padding:0 28px 25px;
+  }
+  button.key{
+    width:67px; height:67px; border-radius:50%;
+    border:none; outline:none; cursor:pointer;
+    background:#121212; color:#cdccd0;
+    font-size:36px; font-family:inherit; font-weight:400;
+    justify-self:center; transition:transform .07s ease, background .07s ease;
+    display:flex; align-items:center; justify-content:center;
+    padding:0;
+  }
+  button.key:active{transform:scale(.92); background:#1f1f1f;}
+  button.key svg{pointer-events:none;}
+  /* One UI ripple efekt */
+  button.key{position:relative; overflow:hidden;}
+  .ripple{
+    position:absolute; border-radius:50%; background:rgba(255,255,255,.22);
+    transform:scale(0); opacity:1; pointer-events:none;
+    animation:ripple .5s cubic-bezier(.2,0,0,1) forwards;
+  }
+  button.key.eq .ripple{background:rgba(0,0,0,.18);}
+  @keyframes ripple{
+    to{ transform:scale(3); opacity:0; }
+  }
+  /* animácia výsledku pri = */
+  .expr.animate{ animation:slideup .32s cubic-bezier(.2,0,0,1); }
+  @keyframes slideup{
+    from{ transform:translateY(18px); opacity:0; }
+    to{ transform:translateY(0); opacity:1; }
+  }
+  /* vynorenie jednotlivých znakov pri písaní */
+  #exprText .ch{ display:inline-block; }
+  #exprText .ch.pop{ animation:chpop .18s cubic-bezier(.2,0,0,1); }
+  @keyframes chpop{
+    from{ transform:translateY(10px) scale(.8); opacity:0; }
+    to{ transform:none; opacity:1; }
+  }
+  .preview.animate{ animation:fadein .25s ease-out; }
+  .display.animate{ animation:fadein .25s ease-out; }
+  @keyframes fadein{ from{opacity:.25;} to{opacity:1;} }
+  .hist-item{ animation:slideup .3s cubic-bezier(.2,0,0,1) backwards; }
+  .hist-item:nth-child(1){animation-delay:.02s;} .hist-item:nth-child(2){animation-delay:.05s;}
+  .hist-item:nth-child(3){animation-delay:.08s;} .hist-item:nth-child(4){animation-delay:.11s;}
+  .hist-item:nth-child(5){animation-delay:.14s;} .hist-item:nth-child(n+6){animation-delay:.17s;}
+  button.key.red{color:#e5302b;}
+  button.key.eq{background:#5c5c66; color:#000; font-size:36px; font-weight:600;}
+  button.key.eq:active{background:#767683;}
+  button.key.small{font-size:23px; letter-spacing:1px;}
+
+  /* vedecký režim */
+  .pads{
+    overflow-y:auto; scrollbar-width:none;
+    flex:0 1 auto; min-height:0;
+  }
+  .pads::-webkit-scrollbar{display:none;}
+  .sciPad{
+    display:none; grid-template-columns:repeat(4,67px);
+    justify-content:space-between; gap:12px 0; padding:0 28px 14px;
+  }
+  .app.sci .sciPad{display:grid;}
+  .app.sci .display{min-height:120px; padding-bottom:12px;}
+  .app.sci .preview{margin-top:22px;}
+  button.key.sci{width:58px; height:58px; font-size:20px;}
+  #sciBtn{transition:opacity .15s;}
+  #sciBtn.active path, #sciBtn.active rect{stroke:#7aa7ff;}
+  #sciBtn.active{opacity:1;}
+
+  /* panely (história, prevodník) */
+  .overlay .screen{
+    width:390px; max-width:100vw; height:780px; max-height:100vh;
+    background:#000; display:flex; flex-direction:column;
+    transform:translateX(70px); opacity:0;
+    transition:transform .3s cubic-bezier(.2,0,0,1), opacity .3s cubic-bezier(.2,0,0,1);
+  }
+  .overlay.open .screen{transform:none; opacity:1;}
+  .screen-head{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:34px 28px 24px;
+  }
+  .screen-title{font-size:23px; color:#e8e8e8;}
+  .screen-head svg{cursor:pointer;}
+  .hist-list{flex:1; overflow-y:auto; padding:0 28px;}
+  .hist-item{padding:18px 0 20px; border-bottom:1px solid #1d1d1d; text-align:right; cursor:pointer;}
+  .hist-item:active{background:#111;}
+  .hist-expr{color:#8a8a8a; font-size:18px; white-space:nowrap; overflow-x:auto; scrollbar-width:none;}
+  .hist-expr::-webkit-scrollbar{display:none;}
+  .hist-res{color:#cdccd0; font-size:30px; margin-top:8px; white-space:nowrap; overflow-x:auto; scrollbar-width:none;}
+  .hist-res::-webkit-scrollbar{display:none;}
+  .hist-empty{color:#57565a; font-size:17px; text-align:center; margin-top:300px;}
+
+  .conv-body{padding:0 28px; overflow-y:auto;}
+  .conv-body select, .conv-body input{
+    width:100%; padding:13px 14px; font-size:17px;
+    border-radius:13px; border:none; outline:none;
+    background:#161616; color:#e8e8e8; margin-bottom:12px;
+    font-family:inherit;
+  }
+  .conv-body input{text-align:right; font-size:22px;}
+  .conv-swap{
+    width:44px; height:44px; margin:2px auto 14px; border-radius:50%;
+    background:#161616; color:#7aa7ff; font-size:20px;
+    display:flex; align-items:center; justify-content:center; cursor:pointer;
+  }
+  .conv-label{font-size:12.5px; color:#8f8f8f; margin:4px 0 8px;}
+
+  /* tajné menu */
+  .overlay{
+    position:fixed; inset:0; background:rgba(0,0,0,.6);
+    display:flex; align-items:center; justify-content:center; z-index:10;
+    backdrop-filter:blur(4px);
+    opacity:0; pointer-events:none;
+    transition:opacity .22s ease;
+  }
+  .overlay.open{opacity:1; pointer-events:auto;}
+  .sheet{
+    width:320px; background:#161616; color:#e8e8e8;
+    border-radius:26px; padding:26px 24px; text-align:center;
+    border:1px solid #242424;
+    box-shadow:0 16px 50px rgba(0,0,0,.6);
+    transform:translateY(46px) scale(.95); opacity:0;
+    transition:transform .3s cubic-bezier(.2,0,0,1), opacity .3s cubic-bezier(.2,0,0,1);
+  }
+  .overlay.open .sheet{transform:none; opacity:1;}
+  .sheet h2{margin:0 0 4px; font-size:20px;}
+  .sheet p{margin:0 0 16px; font-size:12.5px; color:#8f8f8f; line-height:1.55;}
+  .sheet input, .sheet select{
+    width:100%; padding:11px 14px; font-size:17px; text-align:center;
+    border-radius:13px; border:none; outline:none;
+    background:#000; color:#e8e8e8; margin-bottom:12px;
+    font-family:inherit;
+  }
+  .sheet select{text-align:left; appearance:auto;}
+  .set-row{
+    display:flex; align-items:center; justify-content:space-between;
+    margin-bottom:12px; font-size:13.5px; gap:10px; color:#cfcfcf;
+  }
+  .set-row select, .set-row .count-in{
+    background:#000; color:#e8e8e8;
+    border:none; outline:none; border-radius:10px;
+    padding:8px 10px; font-size:14px; font-family:inherit;
+  }
+  .set-row .count-in{width:64px; text-align:center; padding:8px 4px;}
+  .sheet .row{display:flex; gap:10px; margin-top:6px;}
+  .sheet button{
+    flex:1; padding:12px 0; border-radius:14px; border:none;
+    font-size:15px; font-family:inherit; cursor:pointer; font-weight:600;
+  }
+  .btn-save{background:#a3a3a3; color:#000;}
+  .btn-close{background:#242424; color:#c2c2c2;}
+</style>
+</head>
+<body>
+<div class="app" id="app">
+  <div class="topbar">
+    <svg id="histBtn" width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="#cfcfcf" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+      <path d="M3 3v5h5"/>
+      <path d="M12 7v5l4 2"/>
+    </svg>
+    <div class="icons">
+      <svg id="convBtn" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#cfcfcf" stroke-width="1.7" stroke-linecap="round">
+        <g transform="rotate(-35 12 12)">
+          <rect x="2.6" y="9" width="18.8" height="6" rx="1.6"/>
+          <path d="M7 9v2.6M10.6 9v2.6M14.2 9v2.6M17.8 9v2.6"/>
+        </g>
+      </svg>
+      <svg id="sciBtn" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#cfcfcf" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="3" y="3" width="18" height="18" rx="4.5"/>
+        <path d="M7.4 12.6l2.4 2.5 4.6-7.4"/>
+      </svg>
+    </div>
+  </div>
+
+  <div class="display" id="display">
+    <div class="expr" id="exprLine"><span id="exprText"></span><span class="caret" id="caret"></span></div>
+    <div class="preview" id="previewLine"></div>
+  </div>
+
+  <div class="pads">
+  <div class="sciPad">
+    <button class="key sci" data-ins="sin(">sin</button>
+    <button class="key sci" data-ins="cos(">cos</button>
+    <button class="key sci" data-ins="tan(">tan</button>
+    <button class="key sci" data-ins="log(">log</button>
+    <button class="key sci" data-ins="ln(">ln</button>
+    <button class="key sci" data-ins="√(">√</button>
+    <button class="key sci" data-act="sq">x²</button>
+    <button class="key sci" data-ins="^">xʸ</button>
+    <button class="key sci" data-ins="π">π</button>
+    <button class="key sci" data-ins="e">e</button>
+    <button class="key sci" data-act="fact">n!</button>
+    <button class="key sci" data-act="inv">1/x</button>
+  </div>
+
+  <div class="pad">
+    <button class="key red" data-act="ac" style="font-size:30px;">C</button>
+    <button class="key red" data-act="back" aria-label="Vymazať">
+      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#e5302b" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M9.2 5.5h9.3A2.5 2.5 0 0 1 21 8v8a2.5 2.5 0 0 1-2.5 2.5H9.2L3.7 12z"/>
+        <path d="M11.7 9.6l4.8 4.8M16.5 9.6l-4.8 4.8"/>
+      </svg>
+    </button>
+    <button class="key" data-act="pct">%</button>
+    <button class="key" data-op="÷">÷</button>
+
+    <button class="key" data-digit="7">7</button>
+    <button class="key" data-digit="8">8</button>
+    <button class="key" data-digit="9">9</button>
+    <button class="key" data-op="×">×</button>
+
+    <button class="key" data-digit="4">4</button>
+    <button class="key" data-digit="5">5</button>
+    <button class="key" data-digit="6">6</button>
+    <button class="key" data-op="−">−</button>
+
+    <button class="key" data-digit="1">1</button>
+    <button class="key" data-digit="2">2</button>
+    <button class="key" data-digit="3">3</button>
+    <button class="key" data-op="+">+</button>
+
+    <button class="key small" data-act="paren">( )</button>
+    <button class="key" data-digit="0">0</button>
+    <button class="key" data-act="dot">,</button>
+    <button class="key eq" data-act="eq">=</button>
+  </div>
+  </div>
+</div>
+
+<div class="overlay" id="histOverlay">
+  <div class="screen">
+    <div class="screen-head">
+      <span class="screen-title">História</span>
+      <svg id="trashBtn" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#cfcfcf" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M4 7h16M9.5 7V4.8A1.3 1.3 0 0 1 10.8 3.5h2.4a1.3 1.3 0 0 1 1.3 1.3V7M6.5 7l1 13.2A1.5 1.5 0 0 0 9 21.5h6a1.5 1.5 0 0 0 1.5-1.3L17.5 7"/>
+        <path d="M10 11v6M14 11v6"/>
+      </svg>
+    </div>
+    <div class="hist-list" id="histList"></div>
+  </div>
+</div>
+
+<div class="overlay" id="convOverlay">
+  <div class="screen">
+    <div class="screen-head">
+      <span class="screen-title">Prevodník</span>
+      <svg id="convClose" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#cfcfcf" stroke-width="1.7" stroke-linecap="round">
+        <path d="M5 5l14 14M19 5L5 19"/>
+      </svg>
+    </div>
+    <div class="conv-body">
+      <select id="convCat"></select>
+      <div class="conv-label">Z</div>
+      <select id="convFrom"></select>
+      <input id="convIn" type="number" step="any" inputmode="decimal" value="1">
+      <div class="conv-swap" id="convSwap">⇅</div>
+      <div class="conv-label">Do</div>
+      <select id="convTo"></select>
+      <input id="convOut" readonly>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="overlay">
+  <div class="sheet">
+    <h2>🔮 Tajné menu</h2>
+    <p>Kúzlo sa aktivuje, keď v príklade stlačíš zvolené znamienko
+       <b>po zadaný počet krát</b>. Môžeš napríklad celý príklad násobiť
+       a keď stlačíš plus, kúzlo sa spustí – kliknuté číslice sa tajne
+       prepíšu tak, aby výsledok vyšiel presne toto číslo.</p>
+    <input id="secretInput" type="number" step="any" inputmode="decimal">
+    <div class="set-row">
+      <span>Aktivovať pri znamienku</span>
+      <select id="opSelect">
+        <option value="+">+  plus</option>
+        <option value="−">−  mínus</option>
+        <option value="×">×  krát</option>
+        <option value="÷">÷  deleno</option>
+      </select>
+    </div>
+    <div class="set-row">
+      <span>Na koľké stlačenie</span>
+      <input id="countInput" type="number" min="1" max="9" class="count-in">
+    </div>
+    <div class="set-row">
+      <span>Ako sa číslo ukáže</span>
+      <select id="revealSelect">
+        <option value="digits">s každou číslicou</option>
+        <option value="after">dokončí sa po N číslicach</option>
+      </select>
+    </div>
+    <div class="set-row" id="revealAfterRow" style="display:none">
+      <span>Po koľkých číslicach</span>
+      <input id="revealAfterInput" type="number" min="1" max="9" class="count-in">
+    </div>
+    <div class="row">
+      <button class="btn-close" id="btnClose">Zavrieť</button>
+      <button class="btn-save" id="btnSave">Uložiť</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ---------- stav ---------- */
+let tokens = [];          // uz zadané čísla a operátory, napr. ['12','+','7','+']
+let cur = '';             // momentálne písané číslo (desatinná bodka interne)
+let opCounts = {'+':0,'−':0,'×':0,'÷':0}; // koľko krát bolo ktoré znamienko stlačené v tejto sérii
+let forcedActive = false; // prebieha kúzlo (spúšťač)
+let forcedTarget = '';    // číslo, ktoré sa tajne "napíše"
+let forcedClicks = 0;     // koľko číslic už používateľ klikol počas kúzla
+let afterEqual = false;
+let lastResultStr = '0';
+let exprShown = '';       // výraz zobrazený po stlačení =
+
+/* ---------- tajné číslo a spúšťač kúzla ---------- */
+function getSecret(){
+  const v = parseFloat(localStorage.getItem('magic.secret'));
+  return Number.isFinite(v) ? v : 2026;
+}
+function getTrigger(){
+  const op = localStorage.getItem('magic.triggerOp');
+  const c = parseInt(localStorage.getItem('magic.triggerCount'));
+  return {
+    op: ['+','−','×','÷'].includes(op) ? op : '+',
+    count: (Number.isInteger(c) && c>=1 && c<=9) ? c : 3
+  };
+}
+function getReveal(){
+  const m = localStorage.getItem('magic.revealMode');
+  const c = parseInt(localStorage.getItem('magic.revealAfter'));
+  return {
+    mode: m==='after' ? 'after' : 'digits',
+    after: (Number.isInteger(c) && c>=1 && c<=9) ? c : 3
+  };
+}
+function resetOpCounts(){ opCounts = {'+':0,'−':0,'×':0,'÷':0}; }
+
+/* ---------- výpočet výrazu (reťazec -> číslo) ---------- */
+function evalExpr(s){
+  s = (s||'').replace(/[\s,]/g,'');
+  if(!s) return null;
+  let i = 0;
+  function peek(){ return s[i]; }
+  function fact(n){
+    if(n<0 || n!==Math.floor(n) || n>170) return NaN;
+    let r=1; for(let k=2;k<=n;k++) r*=k;
+    return r;
+  }
+  function expr(){
+    let v = term().v;
+    while(peek()==='+'||peek()==='−'){
+      const op = s[i++];
+      const r = term();
+      // Samsung štýl: 200 + 10% znamená 200 + desatinu z 200
+      if(r.pct) v = op==='+' ? v + v*Math.abs(r.v) : v - v*Math.abs(r.v);
+      else v = op==='+' ? v+r.v : v-r.v;
+    }
+    return v;
+  }
+  function term(){
+    let pct = false;
+    let v = unary();
+    if(s[i-1]==='%' && /[0-9)πe!]/.test(s[i-2]||'')) pct = true;
+    while(peek()==='×'||peek()==='÷'){
+      const op = s[i++];
+      const r = unary();
+      v = op==='×' ? v*r : v/r;
+      pct = false;
+    }
+    return { v, pct };
+  }
+  function unary(){
+    if(peek()==='−'){ i++; return -unary(); }
+    return power();
+  }
+  function power(){
+    let v = postfix();
+    if(peek()==='^'){ i++; v = Math.pow(v, unary()); }
+    return v;
+  }
+  function postfix(){
+    let v = primary();
+    while(peek()==='!'||peek()==='%'){
+      const c = s[i++];
+      v = c==='!' ? fact(v) : v/100;
+    }
+    return v;
+  }
+  function primary(){
+    const ch = peek();
+    if(ch==='('){
+      i++; const v = expr();
+      if(peek()===')') i++;
+      return v;
+    }
+    if(/[a-zπ√]/.test(ch||'')){
+      let name='';
+      while(i<s.length && /[a-zπ√]/.test(s[i])) name += s[i++];
+      let val;
+      if(name==='π') val = Math.PI;
+      else if(name==='e') val = Math.E;
+      else {
+        let arg;
+        if(peek()==='('){ i++; arg = expr(); if(peek()===')') i++; }
+        else arg = power();
+        const d = arg*Math.PI/180; // Samsung štýl: stupne
+        switch(name){
+          case 'sin': val = Math.sin(d); break;
+          case 'cos': val = Math.cos(d); break;
+          case 'tan': val = Math.tan(d); break;
+          case 'log': val = Math.log10(arg); break;
+          case 'ln':  val = Math.log(arg); break;
+          case '√':   val = Math.sqrt(arg); break;
+          default: return NaN;
+        }
+      }
+      return val;
+    }
+    let n='';
+    while(i<s.length && /[0-9.]/.test(s[i])) n += s[i++];
+    const v = parseFloat(n);
+    if(!Number.isFinite(v)) return NaN;
+    return v;
+  }
+  const v = expr();
+  return (i >= s.length && Number.isFinite(v)) ? v : null;
+}
+
+/* ---------- formátovanie ---------- */
+function fmtNumStr(str){
+  if(!/^[0-9.]+$/.test(str)) return str;
+  const [ip, dp] = str.split('.');
+  const intPart = ip==='' || ip==='-' ? ip : Number(ip).toLocaleString('sk-SK');
+  return intPart + (dp !== undefined ? ','+dp : '');
+}
+function fmt(n){
+  if(n===null || !Number.isFinite(n)) return 'Error';
+  const a = Math.abs(n);
+  if(a!==0 && (a>=1e15 || a<1e-9)){
+    return n.toExponential(6).replace(/\.?0+e/,'e').replace('.',',');
+  }
+  const r = Math.round(n*1e10)/1e10;
+  const [ip, dp] = String(r).split('.');
+  return Number(ip).toLocaleString('sk-SK') + (dp ? ','+dp : '');
+}
+function isOpToken(t){ return ['+','−','×','÷'].includes(t); }
+
+/* ---------- vykreslenie ---------- */
+let prevExpr = '';   // predchádzajúci obsah displeja (pre animáciu vynorenia)
+let prevPreview = '';
+function renderExprHTML(text, animFrom){
+  let html = '';
+  for(let i=0; i<text.length; i++){
+    let c = text[i];
+    if(c===' ') c = '\u00A0';
+    else if(c==='&') c = '&amp;';
+    else if(c==='<') c = '&lt;';
+    else if(c==='>') c = '&gt;';
+    html += (i>=animFrom)
+      ? '<span class="ch pop">'+c+'</span>'
+      : '<span class="ch">'+c+'</span>';
+  }
+  return html;
+}
+function render(){
+  const exprText = document.getElementById('exprText');
+  const caret    = document.getElementById('caret');
+  const preview  = document.getElementById('previewLine');
+
+  if(afterEqual){
+    exprText.innerHTML = renderExprHTML(lastResultStr, -1);
+    exprText.style.color = '#b0b1b9';
+    caret.style.display = 'none';
+    preview.textContent = '';
+    prevExpr = lastResultStr;
+  } else {
+    exprText.style.color = '';
+    const parts = tokens.map(t => isOpToken(t) ? t : fmtNumStr(t));
+    if(cur!=='') parts.push(fmtNumStr(cur));
+    const text = parts.length ? parts.join('') : '0';
+    // ktoré znaky sa majú vynoriť: prírazok = nové znaky, zmenšenie = nič,
+    // úplne nový výraz = celý
+    let animFrom = 0;
+    if(text.startsWith(prevExpr) && text.length>prevExpr.length) animFrom = prevExpr.length;
+    else if(prevExpr.startsWith(text) || prevExpr==='') animFrom = text.length;
+    exprText.innerHTML = renderExprHTML(text, animFrom);
+    caret.style.display = '';
+    prevExpr = text;
+    let pv = '';
+    if(tokens.length>0 || (cur!=='' && /[0-9]/.test(cur))){
+      const all = [...tokens];
+      if(cur!=='') all.push(cur);
+      const v = evalExpr(all.join(''));
+      pv = v===null ? '' : fmt(v);
+    }
+    if(pv !== prevPreview){
+      preview.classList.remove('animate');
+      void preview.offsetWidth;
+      if(pv) preview.classList.add('animate');
+      prevPreview = pv;
+    }
+    preview.textContent = pv;
+  }
+  const exprEl = document.getElementById('exprLine');
+  exprEl.scrollLeft = exprEl.scrollWidth;
+  preview.scrollLeft = preview.scrollWidth;
+}
+
+/* ---------- akcie tlačidiel ---------- */
+function digitPress(d){
+  if(afterEqual){
+    tokens = []; cur=''; resetOpCounts(); afterEqual=false;
+    forcedActive=false; forcedTarget='';
+    exprShown='';
+  }
+  if(forcedActive){
+    // KÚZLO: číslo sa vždy píše force po číslici (bez ohľadu na kliknuté);
+    // v režime "po N číslicach" sa pri N-tom kliknutí celé číslo hneď dokončí
+    const rv = getReveal();
+    if(rv.mode==='digits'){
+      if(cur.length < forcedTarget.length){
+        cur += forcedTarget[cur.length];
+      }
+    } else if(forcedClicks < rv.after){
+      forcedClicks++;
+      if(forcedClicks >= rv.after){
+        cur = forcedTarget;   // celé číslo sa dokončí naraz
+      } else if(cur.length < forcedTarget.length){
+        cur += forcedTarget[cur.length];
+      }
+    }
+    render();
+    return;
+  }
+  const lastDot = cur.lastIndexOf('.') >= 0;
+  if(cur==='0') cur='';
+  if(cur==='' && d==='.') cur='0';
+  if(d==='.' && lastDot) return;
+  cur += d;
+  render();
+}
+
+function opPress(op){
+  if(afterEqual){
+    if(lastResultStr==='Error') return;
+    tokens = [lastResultStr.replace(/\s/g,'').replace(',','.')];
+    cur=''; resetOpCounts(); afterEqual=false;
+  }
+  if(cur==='' && tokens.length && isOpToken(tokens[tokens.length-1])){
+    const prev = tokens.pop();
+    opCounts[prev]--;
+  } else {
+    if(cur==='' && tokens.length===0) return;
+    if(cur!=='') tokens.push(cur);
+    cur='';
+  }
+  tokens.push(op);
+  opCounts[op]++;
+
+  // KÚZLO: pri N-tom stlačení spúšťacieho znamienka sa pripraví donútený výsledok
+  forcedActive=false; forcedTarget='';
+  const trig = getTrigger();
+  if(op===trig.op && opCounts[op]===trig.count){
+    const total = evalExpr(tokens.slice(0,-1).join(''));
+    if(total!==null && Number.isFinite(total)){
+      const secret = getSecret();
+      // podľa spúšťacieho znamienka vypočítame číslo, ktoré donúti výsledok
+      let needed = null;
+      if(trig.op==='+')      needed = secret - total;
+      else if(trig.op==='−') needed = total - secret;
+      else if(trig.op==='×') needed = total!==0 ? secret/total : null;
+      else if(trig.op==='÷') needed = secret!==0 ? total/secret : null;
+      if(needed!==null && Number.isFinite(needed)){
+        const r = Math.round(needed*1e9)/1e9;
+        if(r>0 && Number.isInteger(r)){
+          forcedActive = true;
+          forcedTarget = String(r);
+          forcedClicks = 0;
+        }
+      }
+    }
+  }
+  render();
+}
+
+function equalsPress(){
+  const all = [...tokens];
+  if(forcedActive){
+    // dokončí sa tajné číslo aj keby používateľ neklikol všetky číslice
+    cur = forcedTarget;
+  }
+  if(cur!=='') all.push(cur);
+  if(!all.length) return;
+  const val = evalExpr(all.join(''));
+  exprShown = all.map(t => isOpToken(t) ? t : fmtNumStr(t)).join('');
+  lastResultStr = fmt(val);
+  if(Number.isFinite(val)){
+    saveHistory(exprShown, String(Math.round(val*1e10)/1e10), lastResultStr);
+  }
+  afterEqual = true;
+  tokens = all; cur=''; resetOpCounts();
+  forcedActive=false; forcedTarget=''; forcedClicks=0;
+  render();
+  animateResult();
+}
+
+function acPress(){
+  tokens=[]; cur=''; resetOpCounts();
+  forcedActive=false; forcedTarget=''; forcedClicks=0;
+  afterEqual=false; lastResultStr='0'; exprShown='';
+  render();
+  const el = document.getElementById('display');
+  el.classList.remove('animate');
+  void el.offsetWidth;
+  el.classList.add('animate');
+}
+
+function backPress(){
+  if(afterEqual){ acPress(); return; }
+  if(cur.length>0){
+    // po odhalení celého čísla je kúzlo zamknuté
+    const rv = getReveal();
+    if(forcedActive && rv.mode==='after' && forcedClicks >= rv.after) return;
+    cur = cur.slice(0,-1);
+    if(forcedActive && rv.mode==='after' && forcedClicks>0) forcedClicks--;
+  }
+  else if(tokens.length){
+    const last = tokens.pop();
+    if(isOpToken(last)){
+      opCounts[last]--;
+      if(last===getTrigger().op){ forcedActive=false; forcedTarget=''; }
+    }
+  }
+  render();
+}
+
+function pctPress(){
+  if(forcedActive || afterEqual) return;
+  if(cur==='' || !/[0-9]$/.test(cur)) return;
+  cur += '%';
+  render();
+}
+
+function parenPress(){
+  if(forcedActive || afterEqual) return;
+  const joined = tokens.join('')+cur;
+  const open = joined.split('(').length - joined.split(')').length;
+  if(cur!=='' && /[0-9%πe)]$/.test(cur)){
+    if(open>0) cur += ')';
+  } else {
+    cur += '(';
+  }
+  render();
+}
+
+function dotPress(){ digitPress('.'); }
+
+/* ---------- vedecké funkcie ---------- */
+function rawResultStr(){
+  return lastResultStr.replace(/\s/g,'').replace(',','.');
+}
+function clearAfterEqualState(){
+  afterEqual=false; exprShown=''; resetOpCounts();
+  forcedActive=false; forcedTarget='';
+}
+function insertPress(text){
+  if(forcedActive) return; // počas kúzla iba číslice
+  if(afterEqual){
+    if(lastResultStr==='Error'){ tokens=[]; cur=''; clearAfterEqualState(); }
+    else if(/\($/.test(text)){ tokens=[text+rawResultStr()+')']; cur=''; clearAfterEqualState(); }
+    else { tokens=[rawResultStr()]; cur=text; clearAfterEqualState(); }
+    render(); return;
+  }
+  // implicitné násobenie: 2 potom sin( => 2×sin(
+  if(/^[a-zπ√]/.test(text) && /[0-9)πe!%]$/.test(cur)) cur += '×';
+  cur += text;
+  render();
+}
+function sqPress(){
+  if(forcedActive) return;
+  if(afterEqual && lastResultStr!=='Error'){
+    tokens=[rawResultStr()+'^2']; cur=''; clearAfterEqualState();
+    render(); return;
+  }
+  cur += '^2';
+  render();
+}
+function factPress(){
+  if(forcedActive) return;
+  if(afterEqual && lastResultStr!=='Error'){
+    tokens=[rawResultStr()+'!']; cur=''; clearAfterEqualState();
+    render(); return;
+  }
+  if(cur==='' || !/[0-9)!πe]/.test(cur[cur.length-1]||'')) return;
+  cur += '!';
+  render();
+}
+function invPress(){
+  if(forcedActive) return;
+  if(afterEqual && lastResultStr!=='Error'){
+    tokens=['1/('+rawResultStr()+')']; cur=''; clearAfterEqualState();
+    render(); return;
+  }
+  if(/^[0-9.]+$/.test(cur)) cur = '1÷('+cur+')';
+  else cur += '1÷(';
+  render();
+}
+
+/* ---------- história ---------- */
+const histOverlay = document.getElementById('histOverlay');
+function getHistory(){
+  try{ return JSON.parse(localStorage.getItem('magic.history')||'[]'); }catch(e){ return []; }
+}
+function saveHistory(expr, raw, formatted){
+  const h = getHistory();
+  h.unshift({ e: expr, r: raw, f: formatted });
+  if(h.length>50) h.pop();
+  localStorage.setItem('magic.history', JSON.stringify(h));
+}
+function renderHistory(){
+  const list = document.getElementById('histList');
+  const h = getHistory();
+  if(!h.length){ list.innerHTML = '<div class="hist-empty">Žiadna história</div>'; return; }
+  list.innerHTML = h.map((it,idx)=>
+    '<div class="hist-item" data-i="'+idx+'"><div class="hist-expr">'+it.e+' =</div><div class="hist-res">'+it.f+'</div></div>'
+  ).join('');
+}
+document.getElementById('histBtn').addEventListener('click', ()=>{
+  renderHistory();
+  histOverlay.classList.add('open');
+});
+document.getElementById('trashBtn').addEventListener('click', ()=>{
+  localStorage.removeItem('magic.history');
+  renderHistory();
+});
+histOverlay.addEventListener('click', e=>{
+  const item = e.target.closest('.hist-item');
+  if(item){
+    const it = getHistory()[+item.dataset.i];
+    if(it){
+      tokens=[]; cur=it.r; resetOpCounts(); afterEqual=false; exprShown='';
+      forcedActive=false; forcedTarget=''; forcedClicks=0;
+      render();
+      animateResult();
+    }
+    histOverlay.classList.remove('open');
+    return;
+  }
+  if(e.target===histOverlay) histOverlay.classList.remove('open');
+});
+
+/* ---------- prevodník jednotiek ---------- */
+const CONV = {
+  'Dĺžka':    { mm:0.001, cm:0.01, m:1, km:1000, palec:0.0254, stopa:0.3048, míľa:1609.344 },
+  'Hmotnosť': { mg:0.000001, g:0.001, kg:1, tuna:1000, unca:0.0283495, libra:0.453592 },
+  'Objem':    { ml:0.001, l:1, 'm³':1000, galón:3.785412 },
+  'Plocha':   { 'm²':1, 'km²':1000000, hektár:10000, akr:4046.856 },
+  'Rýchlosť': { 'm/s':1, 'km/h':0.2777778, mph:0.44704, uzol:0.5144444 },
+  'Čas':      { sekunda:1, minúta:60, hodina:3600, deň:86400 },
+  'Dáta':     { B:1, KB:1024, MB:1048576, GB:1073741824, TB:1099511627776 },
+  'Teplota':  { '°C':1, '°F':1, K:1 }
+};
+const convOverlay = document.getElementById('convOverlay');
+const convCat  = document.getElementById('convCat');
+const convFrom = document.getElementById('convFrom');
+const convTo   = document.getElementById('convTo');
+const convIn   = document.getElementById('convIn');
+const convOut  = document.getElementById('convOut');
+convCat.innerHTML = Object.keys(CONV).map(c=>'<option>'+c+'</option>').join('');
+function convFillUnits(){
+  const units = Object.keys(CONV[convCat.value]);
+  convFrom.innerHTML = units.map(u=>'<option>'+u+'</option>').join('');
+  convTo.innerHTML = units.map(u=>'<option>'+u+'</option>').join('');
+  if(units.length>1) convTo.selectedIndex = 1;
+  convConvert();
+}
+function convConvert(){
+  const from = convFrom.value, to = convTo.value;
+  const v = parseFloat(convIn.value);
+  if(!Number.isFinite(v)){ convOut.value=''; return; }
+  let out;
+  if(convCat.value==='Teplota'){
+    const c = from==='°C' ? v : from==='°F' ? (v-32)*5/9 : v-273.15;
+    out = to==='°C' ? c : to==='°F' ? c*9/5+32 : c+273.15;
+  } else {
+    out = v * CONV[convCat.value][from] / CONV[convCat.value][to];
+  }
+  const r = Math.round(out*1e9)/1e9;
+  convOut.value = Number.isFinite(r) ? r : '';
+}
+convCat.addEventListener('change', convFillUnits);
+convFrom.addEventListener('change', convConvert);
+convTo.addEventListener('change', convConvert);
+convIn.addEventListener('input', convConvert);
+document.getElementById('convSwap').addEventListener('click', ()=>{
+  const f = convFrom.selectedIndex;
+  convFrom.selectedIndex = convTo.selectedIndex;
+  convTo.selectedIndex = f;
+  convIn.value = convOut.value;
+  convConvert();
+});
+document.getElementById('convBtn').addEventListener('click', ()=>{
+  if(!convFrom.options.length) convFillUnits(); else convConvert();
+  convOverlay.classList.add('open');
+});
+document.getElementById('convClose').addEventListener('click', ()=> convOverlay.classList.remove('open'));
+convOverlay.addEventListener('click', e=>{ if(e.target===convOverlay) convOverlay.classList.remove('open'); });
+
+/* ---------- vedecký režim ---------- */
+document.getElementById('sciBtn').addEventListener('click', ()=>{
+  const app = document.getElementById('app');
+  app.classList.toggle('sci');
+  sciBtn.classList.toggle('active', app.classList.contains('sci'));
+});
+
+/* ---------- One UI ripple efekt na tlačidlách ---------- */
+document.querySelectorAll('button.key').forEach(btn=>{
+  btn.addEventListener('pointerdown', e=>{
+    const rect = btn.getBoundingClientRect();
+    const size = Math.max(rect.width, rect.height) * 1.2;
+    const x = (e.clientX || rect.left + rect.width/2) - rect.left - size/2;
+    const y = (e.clientY || rect.top + rect.height/2) - rect.top - size/2;
+    const r = document.createElement('span');
+    r.className = 'ripple';
+    r.style.width = r.style.height = size + 'px';
+    r.style.left = x + 'px';
+    r.style.top = y + 'px';
+    btn.appendChild(r);
+    setTimeout(()=> r.remove(), 520);
+  });
+});
+
+function animateResult(){
+  const el = document.getElementById('exprLine');
+  el.classList.remove('animate');
+  void el.offsetWidth; // reštart animácie
+  el.classList.add('animate');
+}
+
+/* ---------- eventy ---------- */
+document.querySelectorAll('button.key').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    if(btn.dataset.digit !== undefined) return digitPress(btn.dataset.digit);
+    if(btn.dataset.op)    return opPress(btn.dataset.op);
+    if(btn.dataset.ins !== undefined) return insertPress(btn.dataset.ins);
+    switch(btn.dataset.act){
+      case 'ac':    return acPress();
+      case 'back':  return backPress();
+      case 'eq':    return equalsPress();
+      case 'pct':   return pctPress();
+      case 'paren': return parenPress();
+      case 'dot':   return dotPress();
+      case 'sq':    return sqPress();
+      case 'fact':  return factPress();
+      case 'inv':   return invPress();
+    }
+  });
+});
+
+document.addEventListener('keydown', e=>{
+  if(document.getElementById('overlay').classList.contains('open')) return;
+  if(/^[0-9]$/.test(e.key)) digitPress(e.key);
+  else if(e.key==='+') opPress('+');
+  else if(e.key==='-') opPress('−');
+  else if(e.key==='*') opPress('×');
+  else if(e.key==='/'){ e.preventDefault(); opPress('÷'); }
+  else if(e.key==='Enter'||e.key==='=') equalsPress();
+  else if(e.key==='Backspace') backPress();
+  else if(e.key==='Escape') acPress();
+  else if(e.key==='.'||e.key===',') dotPress();
+  else if(e.key==='%') pctPress();
+});
+
+/* ---------- tajné menu: dlhé podržanie displeja ---------- */
+const display = document.getElementById('display');
+let holdTimer = null;
+display.addEventListener('pointerdown', ()=>{
+  holdTimer = setTimeout(openSecret, 800);
+});
+['pointerup','pointerleave','pointercancel'].forEach(ev=>
+  display.addEventListener(ev, ()=> clearTimeout(holdTimer))
+);
+display.addEventListener('contextmenu', e=> e.preventDefault());
+
+const overlay = document.getElementById('overlay');
+function openSecret(){
+  document.getElementById('secretInput').value = getSecret();
+  const trig = getTrigger();
+  document.getElementById('opSelect').value = trig.op;
+  document.getElementById('countInput').value = trig.count;
+  const rv = getReveal();
+  document.getElementById('revealSelect').value = rv.mode;
+  document.getElementById('revealAfterInput').value = rv.after;
+  document.getElementById('revealAfterRow').style.display = rv.mode==='after' ? 'flex' : 'none';
+  overlay.classList.add('open');
+}
+document.getElementById('btnSave').addEventListener('click', ()=>{
+  const v = parseFloat(document.getElementById('secretInput').value);
+  if(Number.isFinite(v)){
+    localStorage.setItem('magic.secret', String(v));
+  }
+  const opSel = document.getElementById('opSelect').value;
+  const c = parseInt(document.getElementById('countInput').value);
+  if(['+','−','×','÷'].includes(opSel)){
+    localStorage.setItem('magic.triggerOp', opSel);
+  }
+  if(Number.isInteger(c) && c>=1 && c<=9){
+    localStorage.setItem('magic.triggerCount', String(c));
+  }
+  const rvMode = document.getElementById('revealSelect').value;
+  localStorage.setItem('magic.revealMode', rvMode==='after' ? 'after' : 'digits');
+  const rvAfter = parseInt(document.getElementById('revealAfterInput').value);
+  if(Number.isInteger(rvAfter) && rvAfter>=1 && rvAfter<=9){
+    localStorage.setItem('magic.revealAfter', String(rvAfter));
+  }
+  overlay.classList.remove('open');
+});
+document.getElementById('revealSelect').addEventListener('change', e=>{
+  document.getElementById('revealAfterRow').style.display = e.target.value==='after' ? 'flex' : 'none';
+});
+document.getElementById('btnClose').addEventListener('click', ()=> overlay.classList.remove('open'));
+overlay.addEventListener('click', e=>{ if(e.target===overlay) overlay.classList.remove('open'); });
+
+render();
+
+/* ---------- PWA: offline service worker (iba cez http/https) ---------- */
+if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) {
+  navigator.serviceWorker.register('sw.js').catch(()=>{});
+}
+</script>
+</body>
+</html>
