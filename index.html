@@ -13,7 +13,7 @@
 <link rel="apple-touch-icon" href="icon-192.png">
 <title>Kalkulačka</title>
 <style>
-  :root{ --btnw: 8.65dvh; }
+  :root{ --btnw: 17.2vw; }
   *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
   html,body{height:100%; overflow:hidden; overscroll-behavior:none;}
   body{
@@ -67,8 +67,8 @@
   .pad{
     display:grid; grid-template-columns:repeat(4, var(--btnw));
     justify-content:space-between;
-    gap:2dvh 0; padding:0 5.8vw 20px;
-    padding-bottom:calc(3.3dvh + env(safe-area-inset-bottom, 0px));
+    gap:16px 0; padding:0 5.8vw 20px;
+    padding-bottom:calc(27px + env(safe-area-inset-bottom, 0px));
   }
   button.key{
     width:var(--btnw); height:var(--btnw); border-radius:50%;
