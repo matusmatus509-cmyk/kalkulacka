@@ -37,31 +37,26 @@
   .topbar svg{display:block; cursor:pointer; opacity:.95;}
   .topbar svg:active{opacity:.5;}
 
-  /* displej */
+  /* displej – Samsung: malý riadok výrazu hore, veľký vstup/výsledok dole */
   .display{
     flex:1; display:flex; flex-direction:column;
     justify-content:flex-end; align-items:flex-end;
-    padding:0 5.3vw 7.9dvh; cursor:pointer; user-select:none;
-    min-height:24dvh; overflow:hidden;
+    padding:0 5.6vw 6.4dvh; cursor:pointer; user-select:none;
+    min-height:26dvh; overflow:hidden;
   }
-  .expr{
-    color:#cdccd0; font-size:min(6dvh, 13.4vw); font-weight:400;
-    max-width:100%; overflow-x:auto; white-space:nowrap;
-    scrollbar-width:none; line-height:1.2;
-  }
-  .expr::-webkit-scrollbar{display:none;}
   .preview{
-    color:#57565a; font-size:min(3.7dvh, 8.3vw); font-weight:400;
+    color:#8e8e96; font-size:min(3.1dvh, 7vw); font-weight:400;
     max-width:100%; overflow-x:auto; white-space:nowrap;
-    scrollbar-width:none; margin-top:10.7dvh; min-height:3.7dvh;
+    scrollbar-width:none; margin-bottom:1.3dvh; line-height:1.25;
   }
   .preview::-webkit-scrollbar{display:none;}
-  .caret{
-    display:inline-block; width:3px; height:1.15em;
-    background:#cccad3; vertical-align:-.18em; margin-left:5px;
-    animation:blink 1.1s steps(1) infinite;
+  .preview:empty{display:none;}
+  .expr{
+    color:#f7f8fa; font-size:min(6.4dvh, 14.2vw); font-weight:300;
+    max-width:100%; overflow-x:auto; white-space:nowrap;
+    scrollbar-width:none; line-height:1.1; letter-spacing:.2px;
   }
-  @keyframes blink{50%{opacity:0;}}
+  .expr::-webkit-scrollbar{display:none;}
 
   /* klávesnica */
   .pad{
@@ -73,22 +68,25 @@
   button.key{
     width:var(--btnw); height:var(--btnw); border-radius:50%;
     border:none; outline:none; cursor:pointer;
-    background:#121212; color:#cdccd0;
+    background:#161618; color:#e2e2e5;
     font-size:min(4.4dvh, 9.9vw); font-family:inherit; font-weight:400;
     justify-self:center; transition:transform .07s ease, background .07s ease;
     display:flex; align-items:center; justify-content:center;
     padding:0;
   }
-  button.key:active{transform:scale(.92); background:#1f1f1f;}
+  button.key:active{transform:scale(.93); background:#2e2e32;}
+  /* operátory – o stupeň svetlejšie ako číslice (ako v Samsung kalkulačke) */
+  button.key.op{background:#29292e; color:#ececef;}
+  button.key.op:active{background:#3c3c42;}
   button.key svg{pointer-events:none;}
   /* One UI ripple efekt */
   button.key{position:relative; overflow:hidden;}
   .ripple{
-    position:absolute; border-radius:50%; background:rgba(255,255,255,.22);
+    position:absolute; border-radius:50%; background:rgba(255,255,255,.18);
     transform:scale(0); opacity:1; pointer-events:none;
     animation:ripple .5s cubic-bezier(.2,0,0,1) forwards;
   }
-  button.key.eq .ripple{background:rgba(0,0,0,.18);}
+  button.key.eq .ripple{background:rgba(0,0,0,.22);}
   @keyframes ripple{
     to{ transform:scale(3); opacity:0; }
   }
@@ -98,23 +96,14 @@
     from{ transform:translateY(18px); opacity:0; }
     to{ transform:translateY(0); opacity:1; }
   }
-  /* vynorenie jednotlivých znakov pri písaní */
-  #exprText .ch{ display:inline-block; }
-  #exprText .ch.pop{ animation:chpop .18s cubic-bezier(.2,0,0,1); }
-  @keyframes chpop{
-    from{ transform:translateY(10px) scale(.8); opacity:0; }
-    to{ transform:none; opacity:1; }
-  }
-  .preview.animate{ animation:fadein .25s ease-out; }
-  .display.animate{ animation:fadein .25s ease-out; }
-  @keyframes fadein{ from{opacity:.25;} to{opacity:1;} }
+  .display.animate{ animation:fadein .2s ease-out; }
+  @keyframes fadein{ from{opacity:.2;} to{opacity:1;} }
   .hist-item{ animation:slideup .3s cubic-bezier(.2,0,0,1) backwards; }
   .hist-item:nth-child(1){animation-delay:.02s;} .hist-item:nth-child(2){animation-delay:.05s;}
   .hist-item:nth-child(3){animation-delay:.08s;} .hist-item:nth-child(4){animation-delay:.11s;}
   .hist-item:nth-child(5){animation-delay:.14s;} .hist-item:nth-child(n+6){animation-delay:.17s;}
-  button.key.red{color:#e5302b;}
-  button.key.eq{background:#5c5c66; color:#000; font-size:min(4.9dvh, 11vw); font-weight:600;}
-  button.key.eq:active{background:#767683;}
+  button.key.eq{background:#5c5c68; color:#0b0b0d; font-size:min(4.6dvh, 10.4vw); font-weight:500;}
+  button.key.eq:active{background:#787884;}
   button.key.small{font-size:min(2.9dvh, 6.6vw); letter-spacing:1px;}
 
   /* vedecký režim */
@@ -154,9 +143,9 @@
   .hist-item:active{background:#111;}
   .hist-expr{color:#8a8a8a; font-size:18px; white-space:nowrap; overflow-x:auto; scrollbar-width:none;}
   .hist-expr::-webkit-scrollbar{display:none;}
-  .hist-res{color:#cdccd0; font-size:30px; margin-top:8px; white-space:nowrap; overflow-x:auto; scrollbar-width:none;}
+  .hist-res{color:#e8e8eb; font-size:30px; margin-top:8px; white-space:nowrap; overflow-x:auto; scrollbar-width:none;}
   .hist-res::-webkit-scrollbar{display:none;}
-  .hist-empty{color:#57565a; font-size:17px; text-align:center; margin-top:300px;}
+  .hist-empty{color:#75757d; font-size:17px; text-align:center; margin-top:300px;}
 
   .conv-body{padding:0 28px; overflow-y:auto;}
   .conv-body select, .conv-body input{
@@ -202,7 +191,7 @@
   .sheet select{text-align:left; appearance:auto;}
   .set-row{
     display:flex; align-items:center; justify-content:space-between;
-    margin-bottom:12px; font-size:13.5px; gap:10px; color:#cfcfcf;
+    margin-bottom:12px; font-size:13.5px; gap:10px; color:#c9c9cf;
   }
   .set-row select, .set-row .count-in{
     background:#000; color:#e8e8e8;
@@ -222,19 +211,19 @@
 <body>
 <div class="app" id="app">
   <div class="topbar">
-    <svg id="histBtn" width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="#cfcfcf" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+    <svg id="histBtn" width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="#c9c9c9" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
       <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
       <path d="M3 3v5h5"/>
       <path d="M12 7v5l4 2"/>
     </svg>
     <div class="icons">
-      <svg id="convBtn" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#cfcfcf" stroke-width="1.7" stroke-linecap="round">
+      <svg id="convBtn" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#c9c9c9" stroke-width="1.7" stroke-linecap="round">
         <g transform="rotate(-35 12 12)">
           <rect x="2.6" y="9" width="18.8" height="6" rx="1.6"/>
           <path d="M7 9v2.6M10.6 9v2.6M14.2 9v2.6M17.8 9v2.6"/>
         </g>
       </svg>
-      <svg id="sciBtn" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#cfcfcf" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+      <svg id="sciBtn" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#c9c9c9" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
         <rect x="3" y="3" width="18" height="18" rx="4.5"/>
         <path d="M7.4 12.6l2.4 2.5 4.6-7.4"/>
       </svg>
@@ -242,8 +231,8 @@
   </div>
 
   <div class="display" id="display">
-    <div class="expr" id="exprLine"><span id="exprText"></span><span class="caret" id="caret"></span></div>
     <div class="preview" id="previewLine"></div>
+    <div class="expr" id="exprLine"><span id="exprText"></span></div>
   </div>
 
   <div class="pads">
@@ -263,30 +252,30 @@
   </div>
 
   <div class="pad">
-    <button class="key red" data-act="ac" style="font-size:min(3.9dvh, 8.8vw);">C</button>
-    <button class="key red" data-act="back" aria-label="Vymazať">
-      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#e5302b" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+    <button class="key" data-act="ac">C</button>
+    <button class="key" data-act="back" aria-label="Vymazať">
+      <svg width="27" height="27" viewBox="0 0 24 24" fill="none" stroke="#e2e2e5" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
         <path d="M9.2 5.5h9.3A2.5 2.5 0 0 1 21 8v8a2.5 2.5 0 0 1-2.5 2.5H9.2L3.7 12z"/>
         <path d="M11.7 9.6l4.8 4.8M16.5 9.6l-4.8 4.8"/>
       </svg>
     </button>
     <button class="key" data-act="pct">%</button>
-    <button class="key" data-op="÷">÷</button>
+    <button class="key op" data-op="÷">÷</button>
 
     <button class="key" data-digit="7">7</button>
     <button class="key" data-digit="8">8</button>
     <button class="key" data-digit="9">9</button>
-    <button class="key" data-op="×">×</button>
+    <button class="key op" data-op="×">×</button>
 
     <button class="key" data-digit="4">4</button>
     <button class="key" data-digit="5">5</button>
     <button class="key" data-digit="6">6</button>
-    <button class="key" data-op="−">−</button>
+    <button class="key op" data-op="−">−</button>
 
     <button class="key" data-digit="1">1</button>
     <button class="key" data-digit="2">2</button>
     <button class="key" data-digit="3">3</button>
-    <button class="key" data-op="+">+</button>
+    <button class="key op" data-op="+">+</button>
 
     <button class="key small" data-act="paren">( )</button>
     <button class="key" data-digit="0">0</button>
@@ -300,7 +289,7 @@
   <div class="screen">
     <div class="screen-head">
       <span class="screen-title">História</span>
-      <svg id="trashBtn" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#cfcfcf" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+      <svg id="trashBtn" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#c9c9c9" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
         <path d="M4 7h16M9.5 7V4.8A1.3 1.3 0 0 1 10.8 3.5h2.4a1.3 1.3 0 0 1 1.3 1.3V7M6.5 7l1 13.2A1.5 1.5 0 0 0 9 21.5h6a1.5 1.5 0 0 0 1.5-1.3L17.5 7"/>
         <path d="M10 11v6M14 11v6"/>
       </svg>
@@ -313,7 +302,7 @@
   <div class="screen">
     <div class="screen-head">
       <span class="screen-title">Prevodník</span>
-      <svg id="convClose" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#cfcfcf" stroke-width="1.7" stroke-linecap="round">
+      <svg id="convClose" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#c9c9c9" stroke-width="1.7" stroke-linecap="round">
         <path d="M5 5l14 14M19 5L5 19"/>
       </svg>
     </div>
@@ -515,64 +504,50 @@ function fmt(n){
 function isOpToken(t){ return ['+','−','×','÷'].includes(t); }
 
 /* ---------- vykreslenie ---------- */
-let prevExpr = '';   // predchádzajúci obsah displeja (pre animáciu vynorenia)
-let prevPreview = '';
-function renderExprHTML(text, animFrom){
-  let html = '';
-  for(let i=0; i<text.length; i++){
-    let c = text[i];
-    if(c===' ') c = '\u00A0';
-    else if(c==='&') c = '&amp;';
-    else if(c==='<') c = '&lt;';
-    else if(c==='>') c = '&gt;';
-    html += (i>=animFrom)
-      ? '<span class="ch pop">'+c+'</span>'
-      : '<span class="ch">'+c+'</span>';
+/*
+ * Samsung kalkulačka zobrazuje:
+ *   – hore MALÝ sivý riadok: celý výraz (ak je rozpísaný alebo po „=“)
+ *   – dole VEĽKÝ biely riadok: práve písané číslo, alebo výsledok po „=“
+ */
+function autofitExpr(){
+  const t = document.getElementById('exprText');
+  const el = document.getElementById('exprLine');
+  if(!t || !el) return;
+  t.style.fontSize = '';
+  if(typeof window === 'undefined' || !window.getComputedStyle) return;
+  if(!el.clientWidth || !t.scrollWidth) return;
+  let fs = parseFloat(window.getComputedStyle(t).fontSize);
+  let guard = 0;
+  while(fs > 9 && t.scrollWidth > el.clientWidth + 1 && guard++ < 80){
+    fs *= 0.97;
+    t.style.fontSize = fs + 'px';
   }
-  return html;
 }
 function render(){
   const exprText = document.getElementById('exprText');
-  const caret    = document.getElementById('caret');
   const preview  = document.getElementById('previewLine');
+  const exprEl   = document.getElementById('exprLine');
 
+  let big = '', small = '';
   if(afterEqual){
-    exprText.innerHTML = renderExprHTML(lastResultStr, -1);
-    exprText.style.color = '#b0b1b9';
-    caret.style.display = 'none';
-    preview.textContent = '';
-    prevExpr = lastResultStr;
+    big   = lastResultStr;
+    small = /[+\u2212\u00d7\u00f7]/.test(exprShown) ? exprShown : '';
   } else {
-    exprText.style.color = '';
-    const parts = tokens.map(t => isOpToken(t) ? t : fmtNumStr(t));
-    if(cur!=='') parts.push(fmtNumStr(cur));
-    const text = parts.length ? parts.join('') : '0';
-    // ktoré znaky sa majú vynoriť: prírazok = nové znaky, zmenšenie = nič,
-    // úplne nový výraz = celý
-    let animFrom = 0;
-    if(text.startsWith(prevExpr) && text.length>prevExpr.length) animFrom = prevExpr.length;
-    else if(prevExpr.startsWith(text) || prevExpr==='') animFrom = text.length;
-    exprText.innerHTML = renderExprHTML(text, animFrom);
-    caret.style.display = '';
-    prevExpr = text;
-    let pv = '';
-    if(tokens.length>0 || (cur!=='' && /[0-9]/.test(cur))){
-      const all = [...tokens];
-      if(cur!=='') all.push(cur);
-      const v = evalExpr(all.join(''));
-      pv = v===null ? '' : fmt(v);
+    if(cur !== ''){
+      big = fmtNumStr(cur);
+    } else {
+      for(let i = tokens.length - 1; i >= 0; i--){
+        if(!isOpToken(tokens[i])){ big = fmtNumStr(tokens[i]); break; }
+      }
     }
-    if(pv !== prevPreview){
-      preview.classList.remove('animate');
-      void preview.offsetWidth;
-      if(pv) preview.classList.add('animate');
-      prevPreview = pv;
+    if(tokens.length && tokens.some(isOpToken)){
+      small = tokens.map(t => isOpToken(t) ? t : fmtNumStr(t)).join('');
     }
-    preview.textContent = pv;
   }
-  const exprEl = document.getElementById('exprLine');
-  exprEl.scrollLeft = exprEl.scrollWidth;
-  preview.scrollLeft = preview.scrollWidth;
+  exprText.textContent = big;
+  preview.textContent  = small;
+  exprEl.scrollLeft    = exprEl.scrollWidth;
+  autofitExpr();
 }
 
 /* ---------- akcie tlačidiel ---------- */
